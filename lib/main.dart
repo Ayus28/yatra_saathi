@@ -30,7 +30,6 @@ class ModernHomeScreen extends StatefulWidget {
 }
 
 class _ModernHomeScreenState extends State<ModernHomeScreen> {
-  // Toggle this variable to true/false to test active journey visibility
   bool hasActiveJourney = true;
 
   @override
@@ -53,7 +52,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -72,52 +71,106 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
           ),
         ),
         actions: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+          Stack(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.notifications_outlined, color: Color(0xFF0F172A), size: 22),
+                  onPressed: () {
+                    _showNotificationsSheet(context);
+                  },
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const Positioned(
+                right: 8,
+                top: 8,
+                child: SizedBox(
+                  width: 8,
+                  height: 8,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: PopupMenuButton<String>(
+              offset: const Offset(0, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              icon: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    'A',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              onSelected: (value) {
+                if (value == 'profile') {
+                  _showProfileDialog(context);
+                } else if (value == 'settings') {
+                  _showSettingsDialog(context);
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'profile',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 20, color: Color(0xFF0F172A)),
+                      SizedBox(width: 12),
+                      Text('Profile', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings_outlined, size: 20, color: Color(0xFF0F172A)),
+                      SizedBox(width: 12),
+                      Text('Settings', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
                 ),
               ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Color(0xFF0F172A), size: 22),
-              onPressed: () {},
-              padding: EdgeInsets.zero,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0, left: 10.0),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text(
-                  'A',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
             ),
           ),
         ],
@@ -130,25 +183,24 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tagline inside a blue box container
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A), // Premium Dark Blue Box
+                    color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0F172A).withOpacity(0.2),
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Har Yatra Ka Bharosemand Saathi',
                         style: TextStyle(
                           color: Colors.white,
@@ -157,12 +209,10 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                           letterSpacing: 0.2,
                         ),
                       ),
-                      const Icon(Icons.verified_rounded, color: Color(0xFF38BDF8), size: 20),
+                      Icon(Icons.verified_rounded, color: Color(0xFF38BDF8), size: 20),
                     ],
                   ),
                 ),
-
-                // Show Active Journey card only when the user has an active journey
                 if (hasActiveJourney) ...[
                   const SizedBox(height: 20),
                   Container(
@@ -172,7 +222,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -279,9 +329,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () {
-                                // Action to view alarm & trip
-                              },
+                              onTap: () {},
                               child: const Text(
                                 'View Alarm & Trip →',
                                 style: TextStyle(
@@ -297,10 +345,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                     ),
                   ),
                 ],
-
                 const SizedBox(height: 24),
-
-                // Quick Access Header
                 const Text(
                   'Quick Access',
                   style: TextStyle(
@@ -311,8 +356,6 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Dashboard Grid Cards
                 Row(
                   children: [
                     Expanded(
@@ -349,7 +392,6 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                         iconBgColor: const Color(0xFFDCFCE7),
                         iconColor: const Color(0xFF16A34A),
                         onTap: () {
-                          // Toggle active journey demo when clicking My Journey (optional test behavior)
                           setState(() {
                             hasActiveJourney = !hasActiveJourney;
                           });
@@ -373,6 +415,110 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Notifications & Alerts',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+              const SizedBox(height: 16),
+              const ListTile(
+                leading: Icon(Icons.train, color: Color(0xFF16A34A)),
+                title: Text('Train 12951 is On Time'),
+                subtitle: Text('Approaching Kota Junction soon.'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const Divider(),
+              const ListTile(
+                leading: Icon(Icons.notifications_active, color: Color(0xFF0284C7)),
+                title: Text('Destination Alarm Set'),
+                subtitle: Text('Alarm scheduled for Mumbai Central arrival.'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showProfileDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('User Profile'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Name: Ayush', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            SizedBox(height: 8),
+            Text('Email: ayush@yatrasaathi.com', style: TextStyle(color: Color(0xFF64748B))),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          bool pushNotifications = true;
+          bool soundAlerts = true;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Settings & Notifications'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text('Push Notifications', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  value: pushNotifications,
+                  onChanged: (val) {
+                    setDialogState(() => pushNotifications = val);
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Sound & Alarm Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  value: soundAlerts,
+                  onChanged: (val) {
+                    setDialogState(() => soundAlerts = val);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -408,7 +554,7 @@ class ModernDashboardCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
