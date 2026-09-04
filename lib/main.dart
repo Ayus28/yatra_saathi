@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'search_screen.dart';
 
 void main() {
   runApp(const YatraSaathiApp());
@@ -376,7 +377,9 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                         icon: Icons.search_rounded,
                         iconBgColor: const Color(0xFFE0F2FE),
                         iconColor: const Color(0xFF0284C7),
-                        onTap: () {},
+                        onTap: () {
+                          showSearchTrainSheet(context);
+                        },
                       ),
                     ),
                   ],
