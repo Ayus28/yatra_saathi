@@ -428,8 +428,8 @@ class _StationSearchScreenState extends State<StationSearchScreen> {
   }
 }
 
-// Day 8: Train Results Screen with Filter for Train Number or Name
-class TrainResultsScreen extends StatelessWidget {
+// Day 10: Train Results Screen with Testing States (Loading, Network Error, No Train Found, Empty State)
+class TrainResultsScreen extends StatefulWidget {
   final String from;
   final String to;
   final String date;
@@ -442,6 +442,40 @@ class TrainResultsScreen extends StatelessWidget {
     required this.date,
     this.searchQuery = '',
   });
+
+  @override
+  State<TrainResultsScreen> createState() => _TrainResultsScreenState();
+}
+
+class _TrainResultsScreenState extends State<TrainResultsScreen> {
+  bool isLoading = true;
+  bool hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTrains();
+  }
+
+  void _fetchTrains() {
+    setState(() {
+      isLoading = true;
+      hasError = false;
+    });
+
+    // Simulating network fetch delay
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          // Simulate a network error if search query is explicitly "error"
+          if (widget.searchQuery.toLowerCase() == 'error') {
+            hasError = true;
+          }
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -473,9 +507,9 @@ class TrainResultsScreen extends StatelessWidget {
     ];
 
     final trains = allTrains.where((train) {
-      if (searchQuery.isEmpty) return true;
-      final numberMatch = train['number'].toLowerCase().contains(searchQuery.toLowerCase());
-      final nameMatch = train['name'].toLowerCase().contains(searchQuery.toLowerCase());
+      if (widget.searchQuery.isEmpty) return true;
+      final numberMatch = train['number'].toLowerCase().contains(widget.searchQuery.toLowerCase());
+      final nameMatch = train['name'].toLowerCase().contains(widget.searchQuery.toLowerCase());
       return numberMatch || nameMatch;
     }).toList();
 
@@ -492,7 +526,7 @@ class TrainResultsScreen extends StatelessWidget {
               style: TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
-              searchQuery.isNotEmpty ? '$date • Filter: "$searchQuery"' : date,
+              widget.searchQuery.isNotEmpty ? '${widget.date} • Filter: "${widget.searchQuery}"' : widget.date,
               style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
             ),
           ],
@@ -502,16 +536,69 @@ class TrainResultsScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: trains.isEmpty
+      body: isLoading
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            CircularProgressIndicator(color: Color(0xFF0284C7)),
+            SizedBox(height: 16),
+            Text(
+              'Finding best trains for you...',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+            ),
+          ],
+        ),
+      )
+          : hasError
+          ? Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.wifi_off_rounded, size: 56, color: Color(0xFFEA580C)),
+              const SizedBox(height: 16),
+              const Text(
+                'Network Error',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please check your internet connection and try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0F172A),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: _fetchTrains,
+                child: const Text('Retry', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      )
+          : trains.isEmpty
           ? Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 48, color: Color(0xFF94A3B8)),
-            const SizedBox(height: 12),
+            const Icon(Icons.search_off, size: 56, color: Color(0xFF94A3B8)),
+            const SizedBox(height: 16),
+            const Text(
+              'No Train Found',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 8),
             Text(
-              'No trains found for "$searchQuery"',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+              'No trains match "${widget.searchQuery}". Try a different search.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
             ),
           ],
         ),
@@ -529,10 +616,10 @@ class TrainResultsScreen extends StatelessWidget {
                   builder: (context) => TrainDetailScreen(
                     train: {
                       ...train,
-                      'fromStation': from,
-                      'toStation': to,
+                      'fromStation': widget.from,
+                      'toStation': widget.to,
                     },
-                    date: date,
+                    date: widget.date,
                   ),
                 ),
               );
