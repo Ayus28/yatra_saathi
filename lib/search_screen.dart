@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// Day 6: Main Search Train Bottom Sheet UI
 void showSearchTrainSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
@@ -217,7 +218,6 @@ void showSearchTrainSheet(BuildContext context) {
                       ),
                       onPressed: () {
                         Navigator.pop(context);
-                        // Pass trainSearchController text to filter results
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -445,7 +445,6 @@ class TrainResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Dummy Train list data
     final List<Map<String, dynamic>> allTrains = [
       {
         'number': '12951',
@@ -473,7 +472,6 @@ class TrainResultsScreen extends StatelessWidget {
       },
     ];
 
-    // Filter trains based on user's search query (number or name)
     final trains = allTrains.where((train) {
       if (searchQuery.isEmpty) return true;
       final numberMatch = train['number'].toLowerCase().contains(searchQuery.toLowerCase());
@@ -523,123 +521,337 @@ class TrainResultsScreen extends StatelessWidget {
         itemCount: trains.length,
         itemBuilder: (context, index) {
           final train = trains[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+          return InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TrainDetailScreen(
+                    train: {
+                      ...train,
+                      'fromStation': from,
+                      'toStation': to,
+                    },
+                    date: date,
+                  ),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${train['number']} • ${train['name']}',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${train['number']} • ${train['name']}',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.bookmark_border, color: Color(0xFF64748B), size: 20),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          train['departure'],
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text('Origin', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          train['duration'],
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: List.generate(3, (i) => Container(
-                            width: 6,
-                            height: 2,
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
-                            color: const Color(0xFFCBD5E1),
-                          )),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          train['arrival'],
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text('Destination', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                      ],
-                    ),
-                  ],
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12.0),
-                  child: Divider(color: Color(0xFFF1F5F9), height: 1),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Runs On:',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                    ),
-                    Row(
-                      children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day) {
-                        bool isRunning = (train['runningDays'] as List).contains(day);
-                        return Container(
-                          width: 22,
-                          height: 22,
-                          margin: const EdgeInsets.only(left: 4),
-                          decoration: BoxDecoration(
-                            color: isRunning ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
-                            shape: BoxShape.circle,
+                      const Icon(Icons.bookmark_border, color: Color(0xFF64748B), size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            train['departure'],
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                           ),
-                          child: Center(
-                            child: Text(
-                              day,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: isRunning ? const Color(0xFF0284C7) : const Color(0xFF94A3B8),
+                          const SizedBox(height: 2),
+                          const Text('Origin', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                      Column(
+                        children: [
+                          Text(
+                            train['duration'],
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: List.generate(3, (i) => Container(
+                              width: 6,
+                              height: 2,
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              color: const Color(0xFFCBD5E1),
+                            )),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            train['arrival'],
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text('Destination', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                    child: Divider(color: Color(0xFFF1F5F9), height: 1),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Runs On:',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                      ),
+                      Row(
+                        children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day) {
+                          bool isRunning = (train['runningDays'] as List).contains(day);
+                          return Container(
+                            width: 22,
+                            height: 22,
+                            margin: const EdgeInsets.only(left: 4),
+                            decoration: BoxDecoration(
+                              color: isRunning ? const Color(0xFFE0F2FE) : const Color(0xFFF1F5F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                day,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isRunning ? const Color(0xFF0284C7) : const Color(0xFF94A3B8),
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ],
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// Day 9: Train Detail Screen with Full Route, Halts, and Platforms
+class TrainDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> train;
+  final String date;
+
+  const TrainDetailScreen({
+    super.key,
+    required this.train,
+    required this.date,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> routeStations = [
+      {
+        'station': train['fromStation'] ?? 'New Delhi',
+        'code': 'NDLS',
+        'arrival': 'Source',
+        'departure': train['departure'],
+        'halt': '0m',
+        'platform': '1',
+      },
+      {
+        'station': 'Mathura Junction',
+        'code': 'MTJ',
+        'arrival': '18:50',
+        'departure': '18:52',
+        'halt': '2m',
+        'platform': '3',
+      },
+      {
+        'station': 'Kota Junction',
+        'code': 'KOTA',
+        'arrival': '22:10',
+        'departure': '22:20',
+        'halt': '10m',
+        'platform': '2',
+      },
+      {
+        'station': 'Ratlam Junction',
+        'code': 'RTM',
+        'arrival': '01:40',
+        'departure': '01:45',
+        'halt': '5m',
+        'platform': '4',
+      },
+      {
+        'station': train['toStation'] ?? 'Mumbai Central',
+        'code': 'BCT',
+        'arrival': train['arrival'],
+        'departure': 'Destination',
+        'halt': '0m',
+        'platform': '5',
+      },
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F5F9),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${train['number']} • ${train['name']}',
+              style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Journey Date: $date',
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            ),
+          ],
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Column(
+                  children: [
+                    const Text('DURATION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                    const SizedBox(height: 2),
+                    Text(train['duration'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  ],
+                ),
+                Container(height: 24, width: 1, color: const Color(0xFFE2E8F0)),
+                Column(
+                  children: [
+                    const Text('TOTAL STATIONS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                    const SizedBox(height: 2),
+                    Text('${routeStations.length}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: routeStations.length,
+              itemBuilder: (context, index) {
+                final stop = routeStations[index];
+                bool isFirst = index == 0;
+                bool isLast = index == routeStations.length - 1;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: isFirst || isLast ? const Color(0xFFEA580C) : const Color(0xFF0284C7),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${stop['station']} (${stop['code']})',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'PF #${stop['platform']}',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Arr: ${stop['arrival']}  |  Dep: ${stop['departure']}',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                ),
+                                Text(
+                                  'Halt: ${stop['halt']}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFEA580C)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
