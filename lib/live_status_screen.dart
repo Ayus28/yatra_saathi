@@ -136,9 +136,14 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                           );
                           return;
                         }
-                        // Next steps (Day 12 onwards) will handle status results
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Searching status for ${_trainController.text.trim()}...')),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LiveStatusDetailScreen(
+                              trainNumber: _trainController.text.trim(),
+                              journeyDate: selectedDate,
+                            ),
+                          ),
                         );
                       },
                       child: const Text(
@@ -150,6 +155,129 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                         ),
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Day 12: Live Status Detail Screen featuring the Train Header
+class LiveStatusDetailScreen extends StatelessWidget {
+  final String trainNumber;
+  final String journeyDate;
+
+  const LiveStatusDetailScreen({
+    super.key,
+    required this.trainNumber,
+    required this.journeyDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final trainName = trainNumber == '12951' ? 'Rajdhani Express' : 'Superfast Express';
+    final currentLocation = 'At Kota Junction (KOTA)';
+    final delayStatus = '15 mins late';
+    final lastUpdated = 'Just now (4:42 PM)';
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F5F9),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Live Status: $trainNumber',
+          style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$trainNumber • $trainName',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          delayStatus,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF0284C7)),
+                      const SizedBox(width: 8),
+                      Text(
+                        currentLocation,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                    child: Divider(color: Color(0xFFF1F5F9), height: 1),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Journey: $journeyDate',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                      Text(
+                        'Updated: $lastUpdated',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    ],
                   ),
                 ],
               ),
