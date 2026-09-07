@@ -85,7 +85,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Color(0xFFE2E8F0)),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -166,7 +166,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   }
 }
 
-// Day 12 & Day 13: Live Status Detail Screen with Header & Route Timeline
+// Day 12, 13 & 14: Live Status Detail Screen with Header, Distance Feature & Route Timeline
 class LiveStatusDetailScreen extends StatelessWidget {
   final String trainNumber;
   final String journeyDate;
@@ -184,7 +184,7 @@ class LiveStatusDetailScreen extends StatelessWidget {
     final delayStatus = '15 mins late';
     final lastUpdated = 'Just now (4:42 PM)';
 
-    // Mock station list for Day 13 Route Timeline
+    // Mock station list for Route Timeline
     final List<Map<String, dynamic>> stations = [
       {'code': 'NDLS', 'name': 'New Delhi', 'time': '16:55', 'status': 'departed', 'delay': 'On time'},
       {'code': 'MTJ', 'name': 'Mathura Junction', 'time': '18:20', 'status': 'departed', 'delay': '5m late'},
@@ -289,6 +289,47 @@ class LiveStatusDetailScreen extends StatelessWidget {
                         style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                       ),
                     ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Day 14: Distance Feature Card (Train -> Current & Next Station Distance)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F2FE),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.social_distance_rounded, color: Color(0xFF0284C7), size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🚆 Train is 2.4 km from Kota Junction',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0369A1),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Next station (Ratlam Jn) is 142.5 km away',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF0284C7),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
