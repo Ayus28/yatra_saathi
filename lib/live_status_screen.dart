@@ -85,7 +85,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: Color(0xFFE2E8F0)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -166,7 +166,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   }
 }
 
-// Day 12: Live Status Detail Screen featuring the Train Header
+// Day 12 & Day 13: Live Status Detail Screen with Header & Route Timeline
 class LiveStatusDetailScreen extends StatelessWidget {
   final String trainNumber;
   final String journeyDate;
@@ -184,6 +184,16 @@ class LiveStatusDetailScreen extends StatelessWidget {
     final delayStatus = '15 mins late';
     final lastUpdated = 'Just now (4:42 PM)';
 
+    // Mock station list for Day 13 Route Timeline
+    final List<Map<String, dynamic>> stations = [
+      {'code': 'NDLS', 'name': 'New Delhi', 'time': '16:55', 'status': 'departed', 'delay': 'On time'},
+      {'code': 'MTJ', 'name': 'Mathura Junction', 'time': '18:20', 'status': 'departed', 'delay': '5m late'},
+      {'code': 'KOTA', 'name': 'Kota Junction', 'time': '22:10', 'status': 'current', 'delay': '15m late'},
+      {'code': 'RTM', 'name': 'Ratlam Junction', 'time': '01:40', 'status': 'upcoming', 'delay': '15m late'},
+      {'code': 'BRC', 'name': 'Vadodara Junction', 'time': '05:10', 'status': 'upcoming', 'delay': '10m late'},
+      {'code': 'BCT', 'name': 'Mumbai Central', 'time': '08:35', 'status': 'destination', 'delay': 'On time'},
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
@@ -198,11 +208,12 @@ class LiveStatusDetailScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Day 12: Train Header Component
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -280,6 +291,131 @@ class LiveStatusDetailScreen extends StatelessWidget {
                     ],
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Day 13: Route Timeline Section Title
+            const Text(
+              'Route Timeline',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Day 13: Route Timeline List
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: stations.length,
+                itemBuilder: (context, index) {
+                  final station = stations[index];
+                  final status = station['status'];
+
+                  Color dotColor;
+                  IconData dotIcon;
+                  if (status == 'departed') {
+                    dotColor = const Color(0xFF16A34A); // Green
+                    dotIcon = Icons.check;
+                  } else if (status == 'current') {
+                    dotColor = const Color(0xFF0284C7); // Blue
+                    dotIcon = Icons.train;
+                  } else if (status == 'destination') {
+                    dotColor = const Color(0xFF9333EA); // Purple
+                    dotIcon = Icons.flag;
+                  } else {
+                    dotColor = const Color(0xFFCBD5E1); // Grey for upcoming
+                    dotIcon = Icons.circle;
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: dotColor.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(dotIcon, size: 14, color: dotColor),
+                          ),
+                          if (index != stations.length - 1)
+                            Container(
+                              width: 2,
+                              height: 45,
+                              color: const Color(0xFFE2E8F0),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 20.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${station['name']} (${station['code']})',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: status == 'current' ? FontWeight.bold : FontWeight.w600,
+                                      color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Scheduled: ${station['time']}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    status.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: dotColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    station['delay'],
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
