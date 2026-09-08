@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 class LiveStatusSearchScreen extends StatefulWidget {
@@ -166,8 +167,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   }
 }
 
-// Day 12, 13, 14 & 15: Live Status Detail Screen with Header, Distance, Route Timeline & ETA / Delay Calculation
-class LiveStatusDetailScreen extends StatelessWidget {
+class LiveStatusDetailScreen extends StatefulWidget {
   final String trainNumber;
   final String journeyDate;
 
@@ -178,13 +178,61 @@ class LiveStatusDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<LiveStatusDetailScreen> createState() => _LiveStatusDetailScreenState();
+}
+
+class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
+  late String lastUpdated;
+  Timer? _autoRefreshTimer;
+  bool isAutoRefreshEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    lastUpdated = 'Just now (4:42 PM)';
+
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (isAutoRefreshEnabled && mounted) {
+        _refreshData(isAuto: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshData({bool isAuto = false}) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+
+    setState(() {
+      final now = DateTime.now();
+      final hour = now.hour > 12 ? now.hour - 12 : (now.hour == 0 ? 12 : now.hour);
+      final minute = now.minute.toString().padLeft(2, '0');
+      final period = now.hour >= 12 ? 'PM' : 'AM';
+      lastUpdated = 'Just now ($hour:$minute $period)';
+    });
+
+    if (!isAuto) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Live status updated successfully'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final trainName = trainNumber == '12951' ? 'Rajdhani Express' : 'Superfast Express';
+    final trainName = widget.trainNumber == '12951' ? 'Rajdhani Express' : 'Superfast Express';
     final currentLocation = 'At Kota Junction (KOTA)';
     final delayStatus = '15 mins late';
-    final lastUpdated = 'Just now (4:42 PM)';
 
-    // Mock station list with ETA, Expected Departure, and Delay Calculation for Day 15
     final List<Map<String, dynamic>> stations = [
       {'code': 'NDLS', 'name': 'New Delhi', 'arr': '16:50', 'dep': '16:55', 'expArr': '16:50', 'expDep': '16:55', 'status': 'departed', 'delay': 'On time'},
       {'code': 'MTJ', 'name': 'Mathura Junction', 'arr': '18:15', 'dep': '18:20', 'expArr': '18:20', 'expDep': '18:25', 'status': 'departed', 'delay': '5m late'},
@@ -200,287 +248,325 @@ class LiveStatusDetailScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          'Live Status: $trainNumber',
+          'Live Status: ${widget.trainNumber}',
           style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0284C7)),
+            tooltip: 'Refresh Status',
+            onPressed: () => _refreshData(isAuto: false),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Day 12: Train Header Component
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+      body: RefreshIndicator(
+        onRefresh: () => _refreshData(isAuto: false),
+        color: const Color(0xFF0284C7),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.sync_rounded, size: 16, color: Color(0xFF059669)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Auto-refresh active (every 30s)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF065F46)),
+                        ),
+                      ],
+                    ),
+                    Switch.adaptive(
+                      value: isAutoRefreshEnabled,
+                      activeTrackColor: const Color(0xFF059669),
+                      onChanged: (val) {
+                        setState(() {
+                          isAutoRefreshEnabled = val;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '$trainNumber • $trainName',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          delayStatus,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFDC2626),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF0284C7)),
-                      const SizedBox(width: 8),
-                      Text(
-                        currentLocation,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Divider(color: Color(0xFFF1F5F9), height: 1),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Journey: $journeyDate',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                      ),
-                      Text(
-                        'Updated: $lastUpdated',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Day 14: Distance Feature Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0F2FE),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFBAE6FD)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.social_distance_rounded, color: Color(0xFF0284C7), size: 24),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '🚆 Train is 2.4 km from Kota Junction',
-                          style: TextStyle(
-                            fontSize: 13,
+                          '${widget.trainNumber} • $trainName',
+                          style: const TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0369A1),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Next station (Ratlam Jn) is 142.5 km away',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF0284C7),
-                            fontWeight: FontWeight.w500,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            delayStatus,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFDC2626),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Route Timeline Section Title
-            const Text(
-              'Route Timeline & ETA',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Day 13 & 15: Route Timeline List with ETA, Expected Departure & Delay
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: stations.length,
-                itemBuilder: (context, index) {
-                  final station = stations[index];
-                  final status = station['status'];
-
-                  Color dotColor;
-                  IconData dotIcon;
-                  if (status == 'departed') {
-                    dotColor = const Color(0xFF16A34A); // Green
-                    dotIcon = Icons.check;
-                  } else if (status == 'current') {
-                    dotColor = const Color(0xFF0284C7); // Blue
-                    dotIcon = Icons.train;
-                  } else if (status == 'destination') {
-                    dotColor = const Color(0xFF9333EA); // Purple
-                    dotIcon = Icons.flag;
-                  } else {
-                    dotColor = const Color(0xFFCBD5E1); // Grey for upcoming
-                    dotIcon = Icons.circle;
-                  }
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: dotColor.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(dotIcon, size: 14, color: dotColor),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF0284C7)),
+                        const SizedBox(width: 8),
+                        Text(
+                          currentLocation,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
                           ),
-                          if (index != stations.length - 1)
-                            Container(
-                              width: 2,
-                              height: 65,
-                              color: const Color(0xFFE2E8F0),
+                        ),
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: Divider(color: Color(0xFFF1F5F9), height: 1),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Journey: ${widget.journeyDate}',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        ),
+                        Text(
+                          'Updated: $lastUpdated',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0F2FE),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.social_distance_rounded, color: Color(0xFF0284C7), size: 24),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '🚆 Train is 2.4 km from Kota Junction',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0369A1),
                             ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Next station (Ratlam Jn) is 142.5 km away',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF0284C7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 20.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${station['name']} (${station['code']})',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: status == 'current' ? FontWeight.bold : FontWeight.w600,
-                                      color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF0F172A),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Sch: Arr ${station['arr']} | Dep ${station['dep']}',
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'ETA: ${station['expArr']} | Exp Dep: ${station['expDep']}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF334155),
-                                    ),
-                                  ),
-                                ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Route Timeline & ETA',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: stations.length,
+                  itemBuilder: (context, index) {
+                    final station = stations[index];
+                    final status = station['status'];
+
+                    Color dotColor;
+                    IconData dotIcon;
+                    if (status == 'departed') {
+                      dotColor = const Color(0xFF16A34A);
+                      dotIcon = Icons.check;
+                    } else if (status == 'current') {
+                      dotColor = const Color(0xFF0284C7);
+                      dotIcon = Icons.train;
+                    } else if (status == 'destination') {
+                      dotColor = const Color(0xFF9333EA);
+                      dotIcon = Icons.flag;
+                    } else {
+                      dotColor = const Color(0xFFCBD5E1);
+                      dotIcon = Icons.circle;
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: dotColor.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    status.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: dotColor,
+                              child: Icon(dotIcon, size: 14, color: dotColor),
+                            ),
+                            if (index != stations.length - 1)
+                              Container(
+                                width: 2,
+                                height: 65,
+                                color: const Color(0xFFE2E8F0),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${station['name']} (${station['code']})',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: status == 'current' ? FontWeight.bold : FontWeight.w600,
+                                        color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF0F172A),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: station['delay'] == 'On time' ? const Color(0xFFDCFCE7) : const Color(0xFFFEF2F2),
-                                      borderRadius: BorderRadius.circular(6),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Sch: Arr ${station['arr']} | Dep ${station['dep']}',
+                                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                                     ),
-                                    child: Text(
-                                      station['delay'],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'ETA: ${station['expArr']} | Exp Dep: ${station['expDep']}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF334155),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      status.toUpperCase(),
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: station['delay'] == 'On time' ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                        color: dotColor,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: station['delay'] == 'On time' ? const Color(0xFFDCFCE7) : const Color(0xFFFEF2F2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        station['delay'],
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: station['delay'] == 'On time' ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
