@@ -166,7 +166,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   }
 }
 
-// Day 12, 13 & 14: Live Status Detail Screen with Header, Distance Feature & Route Timeline
+// Day 12, 13, 14 & 15: Live Status Detail Screen with Header, Distance, Route Timeline & ETA / Delay Calculation
 class LiveStatusDetailScreen extends StatelessWidget {
   final String trainNumber;
   final String journeyDate;
@@ -184,14 +184,14 @@ class LiveStatusDetailScreen extends StatelessWidget {
     final delayStatus = '15 mins late';
     final lastUpdated = 'Just now (4:42 PM)';
 
-    // Mock station list for Route Timeline
+    // Mock station list with ETA, Expected Departure, and Delay Calculation for Day 15
     final List<Map<String, dynamic>> stations = [
-      {'code': 'NDLS', 'name': 'New Delhi', 'time': '16:55', 'status': 'departed', 'delay': 'On time'},
-      {'code': 'MTJ', 'name': 'Mathura Junction', 'time': '18:20', 'status': 'departed', 'delay': '5m late'},
-      {'code': 'KOTA', 'name': 'Kota Junction', 'time': '22:10', 'status': 'current', 'delay': '15m late'},
-      {'code': 'RTM', 'name': 'Ratlam Junction', 'time': '01:40', 'status': 'upcoming', 'delay': '15m late'},
-      {'code': 'BRC', 'name': 'Vadodara Junction', 'time': '05:10', 'status': 'upcoming', 'delay': '10m late'},
-      {'code': 'BCT', 'name': 'Mumbai Central', 'time': '08:35', 'status': 'destination', 'delay': 'On time'},
+      {'code': 'NDLS', 'name': 'New Delhi', 'arr': '16:50', 'dep': '16:55', 'expArr': '16:50', 'expDep': '16:55', 'status': 'departed', 'delay': 'On time'},
+      {'code': 'MTJ', 'name': 'Mathura Junction', 'arr': '18:15', 'dep': '18:20', 'expArr': '18:20', 'expDep': '18:25', 'status': 'departed', 'delay': '5m late'},
+      {'code': 'KOTA', 'name': 'Kota Junction', 'arr': '21:55', 'dep': '22:10', 'expArr': '22:10', 'expDep': '22:25', 'status': 'current', 'delay': '15m late'},
+      {'code': 'RTM', 'name': 'Ratlam Junction', 'arr': '01:25', 'dep': '01:40', 'expArr': '01:40', 'expDep': '01:55', 'status': 'upcoming', 'delay': '15m late'},
+      {'code': 'BRC', 'name': 'Vadodara Junction', 'arr': '05:00', 'dep': '05:10', 'expArr': '05:10', 'expDep': '05:20', 'status': 'upcoming', 'delay': '10m late'},
+      {'code': 'BCT', 'name': 'Mumbai Central', 'arr': '08:35', 'dep': '-', 'expArr': '08:35', 'expDep': '-', 'status': 'destination', 'delay': 'On time'},
     ];
 
     return Scaffold(
@@ -295,7 +295,7 @@ class LiveStatusDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Day 14: Distance Feature Card (Train -> Current & Next Station Distance)
+            // Day 14: Distance Feature Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -336,9 +336,9 @@ class LiveStatusDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Day 13: Route Timeline Section Title
+            // Route Timeline Section Title
             const Text(
-              'Route Timeline',
+              'Route Timeline & ETA',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -347,7 +347,7 @@ class LiveStatusDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Day 13: Route Timeline List
+            // Day 13 & 15: Route Timeline List with ETA, Expected Departure & Delay
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -402,7 +402,7 @@ class LiveStatusDetailScreen extends StatelessWidget {
                           if (index != stations.length - 1)
                             Container(
                               width: 2,
-                              height: 45,
+                              height: 65,
                               color: const Color(0xFFE2E8F0),
                             ),
                         ],
@@ -413,6 +413,7 @@ class LiveStatusDetailScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 20.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,10 +426,19 @@ class LiveStatusDetailScreen extends StatelessWidget {
                                       color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF0F172A),
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Sch: Arr ${station['arr']} | Dep ${station['dep']}',
+                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                  ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Scheduled: ${station['time']}',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                    'ETA: ${station['expArr']} | Exp Dep: ${station['expDep']}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF334155),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -443,10 +453,21 @@ class LiveStatusDetailScreen extends StatelessWidget {
                                       color: dotColor,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    station['delay'],
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: station['delay'] == 'On time' ? const Color(0xFFDCFCE7) : const Color(0xFFFEF2F2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      station['delay'],
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: station['delay'] == 'On time' ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
