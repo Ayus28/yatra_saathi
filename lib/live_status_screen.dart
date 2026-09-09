@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 class LiveStatusSearchScreen extends StatefulWidget {
   const LiveStatusSearchScreen({super.key});
@@ -17,6 +18,39 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
     'Today (Thu, 4 Sep)',
     'Tomorrow (Fri, 5 Sep)',
   ];
+
+  Future<void> _checkLocationAndNavigate(BuildContext context) async {
+    if (_trainController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a train number')),
+      );
+      return;
+    }
+
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location services are disabled. Please enable GPS.')),
+      );
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LiveStatusDetailScreen(
+            trainNumber: _trainController.text.trim(),
+            journeyDate: selectedDate,
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,23 +164,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: () {
-                        if (_trainController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter a train number')),
-                          );
-                          return;
-                        }
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LiveStatusDetailScreen(
-                              trainNumber: _trainController.text.trim(),
-                              journeyDate: selectedDate,
-                            ),
-                          ),
-                        );
-                      },
+                      onPressed: () => _checkLocationAndNavigate(context),
                       child: const Text(
                         'Check Live Status',
                         style: TextStyle(
@@ -167,7 +185,6 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   }
 }
 
-// Day 17: Live Status Detail Screen with comprehensive Error Handling states
 class LiveStatusDetailScreen extends StatefulWidget {
   final String trainNumber;
   final String journeyDate;
@@ -230,9 +247,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Day 17: Handle specific error simulation cases based on Train Number entered
-
-    // 1. Train Not Found Error State
     if (widget.trainNumber == '0000' || widget.trainNumber.length < 4) {
       return Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
@@ -250,13 +264,13 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: const Color(0xFFFEF2F2), shape: BoxShape.circle),
+                  decoration: const BoxDecoration(color: Color(0xFFFEF2F2), shape: BoxShape.circle),
                   child: const Icon(Icons.train_outlined, size: 48, color: Color(0xFFDC2626)),
                 ),
                 const SizedBox(height: 20),
                 const Text('Train Not Found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 const SizedBox(height: 8),
-                const Text('Please check the train number and try again. Ensure it operates on the selected date.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                const Text('Please check the train number and try again.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F172A), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -270,7 +284,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       );
     }
 
-    // 2. API Unavailable Error State (Simulated with train number '9999')
     if (widget.trainNumber == '9999') {
       return Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
@@ -288,13 +301,13 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: const Color(0xFFFEF2F2), shape: BoxShape.circle),
+                  decoration: const BoxDecoration(color: Color(0xFFFEF2F2), shape: BoxShape.circle),
                   child: const Icon(Icons.cloud_off_rounded, size: 48, color: Color(0xFFDC2626)),
                 ),
                 const SizedBox(height: 20),
                 const Text('API Unavailable', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 const SizedBox(height: 8),
-                const Text('Unable to reach the live server right now. Please check your internet connection or try again later.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                const Text('Unable to reach the live server right now.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -310,8 +323,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     }
 
     final trainName = widget.trainNumber == '12951' ? 'Rajdhani Express' : 'Superfast Express';
-
-    // 3. No Location Available / Data Outdated flags simulation for other numbers
     final bool isDataOutdated = widget.trainNumber == '12345';
     final bool isNoLocation = widget.trainNumber == '54321';
 
@@ -357,7 +368,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Day 17: Data Outdated Banner Warning
               if (isDataOutdated)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -380,8 +390,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                     ],
                   ),
                 ),
-
-              // Day 17: No Location Available Banner Warning
               if (isNoLocation)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -404,8 +412,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                     ],
                   ),
                 ),
-
-              // Auto-refresh banner indicator
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 margin: const EdgeInsets.only(bottom: 16),
@@ -439,8 +445,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                   ],
                 ),
               ),
-
-              // Train Header Component
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -525,8 +529,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Distance Feature Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -566,10 +568,8 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Route Timeline Section Title
               const Text(
-                'Route Timeline & ETA',
+                'Route Timeline & Arriving Time',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -577,8 +577,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Route Timeline List
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -664,7 +662,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'ETA: ${station['expArr']} | Exp Dep: ${station['expDep']}',
+                                      'Arriving: ${station['expArr']} | Exp Dep: ${station['expDep']}',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
