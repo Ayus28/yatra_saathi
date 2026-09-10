@@ -204,6 +204,24 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
   Timer? _autoRefreshTimer;
   bool isAutoRefreshEnabled = true;
 
+  // Shared list of community posts so that they sync when opening the full chat room
+  final List<Map<String, String>> _communityPosts = [
+    {
+      'user': 'Rahul S.',
+      'time': '10 mins ago',
+      'station': 'Kota Jn',
+      'message': 'Cleanliness in Coach B3 is good. Train departed right on time after pantry loading.',
+      'likes': '14',
+    },
+    {
+      'user': 'Amit K.',
+      'time': '35 mins ago',
+      'station': 'Mathura Jn',
+      'message': 'Pantry car food quality was decent today. Evening snacks served hot.',
+      'likes': '8',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -245,7 +263,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     }
   }
 
-  void _showAddUpdateDialog(BuildContext context) {
+  void _showAddUpdateDialog(BuildContext context, {Function(Map<String, String>)? onPostAdded}) {
     String selectedTag = '🚆 Departed';
     final TextEditingController messageController = TextEditingController();
 
@@ -401,6 +419,23 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                           );
                           return;
                         }
+
+                        final newPost = {
+                          'user': 'You',
+                          'time': 'Just now',
+                          'station': selectedTag,
+                          'message': messageController.text.trim(),
+                          'likes': '0',
+                        };
+
+                        setState(() {
+                          _communityPosts.insert(0, newPost);
+                        });
+
+                        if (onPostAdded != null) {
+                          onPostAdded(newPost);
+                        }
+
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Update posted successfully under "$selectedTag"')),
@@ -460,44 +495,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       );
     }
 
-    if (widget.trainNumber == '9999') {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: Text('Live Status: ${widget.trainNumber}', style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16)),
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)), onPressed: () => Navigator.pop(context)),
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(color: Color(0xFFFEF2F2), shape: BoxShape.circle),
-                  child: const Icon(Icons.cloud_off_rounded, size: 48, color: Color(0xFFDC2626)),
-                ),
-                const SizedBox(height: 20),
-                const Text('API Unavailable', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                const SizedBox(height: 8),
-                const Text('Unable to reach the live server right now.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  onPressed: () => _refreshData(isAuto: false),
-                  icon: const Icon(Icons.refresh, color: Colors.white),
-                  label: const Text('Retry Connection', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     final trainName = widget.trainNumber == '12951' ? 'Rajdhani Express' : 'Superfast Express';
     final bool isDataOutdated = widget.trainNumber == '12345';
     final bool isNoLocation = widget.trainNumber == '54321';
@@ -528,6 +525,26 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          Row(
+            children: [
+              const Text(
+                'Auto',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+              ),
+              Transform.scale(
+                scale: 0.75,
+                child: Switch.adaptive(
+                  value: isAutoRefreshEnabled,
+                  activeTrackColor: const Color(0xFF16A34A),
+                  onChanged: (val) {
+                    setState(() {
+                      isAutoRefreshEnabled = val;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0284C7)),
             tooltip: 'Refresh Status',
@@ -544,83 +561,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isDataOutdated)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEFCE8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFEF08A)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, color: Color(0xFFCA8A04), size: 20),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Warning: Data may be outdated. Server updates are currently delayed.',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF854D0E)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (isNoLocation)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF1F2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFECDD3)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.location_off_rounded, color: Color(0xFFE11D48), size: 20),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'No live GPS location available for this train segment right now.',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF9F1239)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.sync_rounded, size: 16, color: Color(0xFF059669)),
-                        SizedBox(width: 8),
-                        Text(
-                          'Auto-refresh active (every 30s)',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF065F46)),
-                        ),
-                      ],
-                    ),
-                    Switch.adaptive(
-                      value: isAutoRefreshEnabled,
-                      activeTrackColor: const Color(0xFF059669),
-                      onChanged: (val) {
-                        setState(() {
-                          isAutoRefreshEnabled = val;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              // Train Details Container
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -668,21 +609,56 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(
-                          isNoLocation ? Icons.location_off_rounded : Icons.location_on_rounded,
-                          size: 16,
-                          color: isNoLocation ? const Color(0xFFE11D48) : const Color(0xFF0284C7),
-                        ),
+                        const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF0284C7)),
                         const SizedBox(width: 8),
                         Text(
                           currentLocation,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: isNoLocation ? const Color(0xFFE11D48) : const Color(0xFF0F172A),
+                            color: Color(0xFF0F172A),
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFBAE6FD)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.social_distance_rounded, color: Color(0xFF0284C7), size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '🚆 Train is 2.4 km from Kota Junction',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0369A1),
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Next station (Ratlam Jn) is 142.5 km away',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: Color(0xFF0284C7),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 12.0),
@@ -704,188 +680,172 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2FE),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFBAE6FD)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.social_distance_rounded, color: Color(0xFF0284C7), size: 24),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '🚆 Train is 2.4 km from Kota Junction',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0369A1),
-                            ),
+              const SizedBox(height: 20),
+
+              // Community Updates Section with Click to Open Full Chat Room
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Community Updates & Passenger Reports',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TrainChatRoomScreen(
+                            trainNumber: widget.trainNumber,
+                            trainName: trainName,
+                            posts: _communityPosts,
+                            onAddPost: (post) {
+                              setState(() {
+                                _communityPosts.insert(0, post);
+                              });
+                            },
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Next station (Ratlam Jn) is 142.5 km away',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF0284C7),
-                              fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'View All Chats',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TrainChatRoomScreen(
+                        trainNumber: widget.trainNumber,
+                        trainName: trainName,
+                        posts: _communityPosts,
+                        onAddPost: (post) {
+                          setState(() {
+                            _communityPosts.insert(0, post);
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.forum_rounded, size: 18, color: Color(0xFF0284C7)),
+                              SizedBox(width: 8),
+                              Text(
+                                'Live Crowdsourced Feed (Tap to Open Chat)',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              backgroundColor: const Color(0xFFE0F2FE),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () => _showAddUpdateDialog(context, onPostAdded: (newPost) {
+                              setState(() {
+                                _communityPosts.insert(0, newPost);
+                              });
+                            }),
+                            icon: const Icon(Icons.add, size: 14, color: Color(0xFF0284C7)),
+                            label: const Text(
+                              'Add Update',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Community Updates & Passenger Reports Section
-              const Text(
-                'Community Updates & Passenger Reports',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.forum_rounded, size: 18, color: Color(0xFF0284C7)),
-                            SizedBox(width: 8),
-                            Text(
-                              'Live Crowdsourced Feed',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                            ),
-                          ],
-                        ),
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            backgroundColor: const Color(0xFFE0F2FE),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          onPressed: () => _showAddUpdateDialog(context),
-                          icon: const Icon(Icons.add, size: 14, color: Color(0xFF0284C7)),
-                          label: const Text(
-                            'Add Update',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: 2,
-                      separatorBuilder: (context, index) => const Divider(height: 16, color: Color(0xFFF1F5F9)),
-                      itemBuilder: (context, index) {
-                        final posts = [
-                          {
-                            'user': 'Rahul S.',
-                            'time': '10 mins ago',
-                            'station': 'Kota Jn',
-                            'message': 'Cleanliness in Coach B3 is good. Train departed right on time after pantry loading.',
-                            'likes': '14',
-                          },
-                          {
-                            'user': 'Amit K.',
-                            'time': '35 mins ago',
-                            'station': 'Mathura Jn',
-                            'message': 'Pantry car food quality was decent today. Evening snacks served hot.',
-                            'likes': '8',
-                          },
-                        ];
-                        final post = posts[index];
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
-                                      child: Text(
-                                        post['user']![0],
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                      const SizedBox(height: 12),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _communityPosts.length > 2 ? 2 : _communityPosts.length,
+                        separatorBuilder: (context, index) => const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                        itemBuilder: (context, index) {
+                          final post = _communityPosts[index];
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 12,
+                                        backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                        child: Text(
+                                          post['user']![0],
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      post['user']!,
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(4),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        post['user']!,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                                       ),
-                                      child: Text(
-                                        post['station']!,
-                                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          post['station']!,
+                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  post['time']!,
-                                  style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              post['message']!,
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.3),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(Icons.thumb_up_alt_outlined, size: 12, color: Color(0xFF64748B)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${post['likes']} Helpful',
-                                  style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+                                    ],
+                                  ),
+                                  Text(
+                                    post['time']!,
+                                    style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                post['message']!,
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.3),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -936,96 +896,138 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                       dotIcon = Icons.circle;
                     }
 
-                    return Row(
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: dotColor.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(dotIcon, size: 14, color: dotColor),
-                            ),
-                            if (index != stations.length - 1)
-                              Container(
-                                width: 2,
-                                height: 65,
-                                color: const Color(0xFFE2E8F0),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 20.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Column(
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${station['name']} (${station['code']})',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: status == 'current' ? FontWeight.bold : FontWeight.w600,
-                                        color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Sch: Arr ${station['arr']} | Dep ${station['dep']}',
-                                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Arriving: ${station['expArr']} | Exp Dep: ${station['expDep']}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF334155),
-                                      ),
-                                    ),
-                                  ],
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: dotColor.withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(dotIcon, size: 14, color: dotColor),
                                 ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      status.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: dotColor,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: station['delay'] == 'On time' ? const Color(0xFFDCFCE7) : const Color(0xFFFEF2F2),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        station['delay'],
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: station['delay'] == 'On time' ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                if (index != stations.length - 1)
+                                  Container(
+                                    width: 2,
+                                    height: 75,
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
                               ],
                             ),
-                          ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${station['name']} (${station['code']})',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: status == 'current' ? FontWeight.bold : FontWeight.w600,
+                                            color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Sch: Arr ${station['arr']} | Dep ${station['dep']}',
+                                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Arriving: ${station['expArr']} | Exp Dep: ${station['expDep']}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: status == 'current' ? const Color(0xFF0284C7) : const Color(0xFF334155),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          status.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: dotColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: station['delay'] == 'On time' ? const Color(0xFFDCFCE7) : const Color(0xFFFEF2F2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            station['delay'],
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: station['delay'] == 'On time' ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        if (index == 1)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 42, bottom: 16),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                                title: const Row(
+                                  children: [
+                                    Icon(Icons.unfold_more_rounded, size: 16, color: Color(0xFF64748B)),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      '2 Non-Halting Stations in-between',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                    ),
+                                  ],
+                                ),
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text('• Kosi Kalan (KSV) - Crossed at 18:45', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                                        SizedBox(height: 6),
+                                        Text('• Mathura Outer - Crossed at 19:02', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   },
@@ -1034,6 +1036,234 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Dedicated Train Chat Room Screen (Active until destination reached)
+class TrainChatRoomScreen extends StatefulWidget {
+  final String trainNumber;
+  final String trainName;
+  final List<Map<String, String>> posts;
+  final Function(Map<String, String>) onAddPost;
+
+  const TrainChatRoomScreen({
+    super.key,
+    required this.trainNumber,
+    required this.trainName,
+    required this.posts,
+    required this.onAddPost,
+  });
+
+  @override
+  State<TrainChatRoomScreen> createState() => _TrainChatRoomScreenState();
+}
+
+class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
+  final TextEditingController _msgController = TextEditingController();
+  bool isJourneyCompleted = false; // Set to true once train reaches final destination
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F5F9),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Live Chat: ${widget.trainNumber}',
+              style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              widget.trainName,
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+            ),
+          ],
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isJourneyCompleted ? const Color(0xFFFEF2F2) : const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isJourneyCompleted ? 'Journey Completed' : '🟢 Live Discussion',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isJourneyCompleted ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: const Color(0xFFE0F2FE),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline, color: Color(0xFF0284C7), size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This chat is crowdsourced from live passengers and will remain active until the train reaches its destination.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF0369A1), fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: widget.posts.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final post = widget.posts[index];
+                return Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                child: Text(
+                                  post['user']![0],
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                post['user']!,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  post['station']!,
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            post['time']!,
+                            style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        post['message']!,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.3),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          if (!isJourneyCompleted)
+            Container(
+              padding: const EdgeInsets.all(12),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _msgController,
+                      decoration: InputDecoration(
+                        hintText: 'Share live update with passengers...',
+                        hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      padding: const EdgeInsets.all(12),
+                    ),
+                    icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                    onPressed: () {
+                      if (_msgController.text.trim().isEmpty) return;
+                      final newPost = {
+                        'user': 'You',
+                        'time': 'Just now',
+                        'station': '🚆 Live Update',
+                        'message': _msgController.text.trim(),
+                        'likes': '0',
+                      };
+                      widget.onAddPost(newPost);
+                      setState(() {
+                        _msgController.clear();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: const Color(0xFFFEF2F2),
+              child: const Center(
+                child: Text(
+                  'Train has reached destination. Discussion closed.',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
