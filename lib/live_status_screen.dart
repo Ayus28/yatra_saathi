@@ -568,6 +568,156 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+
+              // Community Updates & Passenger Reports Section
+              const Text(
+                'Community Updates & Passenger Reports',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.forum_rounded, size: 18, color: Color(0xFF0284C7)),
+                            SizedBox(width: 8),
+                            Text(
+                              'Live Crowdsourced Feed',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            backgroundColor: const Color(0xFFE0F2FE),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Post update feature coming in next iteration!')),
+                            );
+                          },
+                          icon: const Icon(Icons.add, size: 14, color: Color(0xFF0284C7)),
+                          label: const Text(
+                            'Add Update',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: 2,
+                      separatorBuilder: (context, index) => const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                      itemBuilder: (context, index) {
+                        final posts = [
+                          {
+                            'user': 'Rahul S.',
+                            'time': '10 mins ago',
+                            'station': 'Kota Jn',
+                            'message': 'Cleanliness in Coach B3 is good. Train departed right on time after pantry loading.',
+                            'likes': '14',
+                          },
+                          {
+                            'user': 'Amit K.',
+                            'time': '35 mins ago',
+                            'station': 'Mathura Jn',
+                            'message': 'Pantry car food quality was decent today. Evening snacks served hot.',
+                            'likes': '8',
+                          },
+                        ];
+                        final post = posts[index];
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                      child: Text(
+                                        post['user']![0],
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      post['user']!,
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        post['station']!,
+                                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  post['time']!,
+                                  style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              post['message']!,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.3),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(Icons.thumb_up_alt_outlined, size: 12, color: Color(0xFF64748B)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${post['likes']} Helpful',
+                                  style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
               const Text(
                 'Route Timeline & Arriving Time',
                 style: TextStyle(
