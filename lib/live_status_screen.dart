@@ -204,19 +204,18 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
   Timer? _autoRefreshTimer;
   bool isAutoRefreshEnabled = true;
 
-  // Shared list of community posts so that they sync when opening the full chat room
   final List<Map<String, String>> _communityPosts = [
     {
       'user': 'Rahul S.',
       'time': '10 mins ago',
-      'station': 'Kota Jn',
+      'station': 'Kota Jn (Current)',
       'message': 'Cleanliness in Coach B3 is good. Train departed right on time after pantry loading.',
       'likes': '14',
     },
     {
       'user': 'Amit K.',
       'time': '35 mins ago',
-      'station': 'Mathura Jn',
+      'station': 'Mathura Jn (Previous)',
       'message': 'Pantry car food quality was decent today. Evening snacks served hot.',
       'likes': '8',
     },
@@ -265,6 +264,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
   void _showAddUpdateDialog(BuildContext context, {Function(Map<String, String>)? onPostAdded}) {
     String selectedTag = '🚆 Departed';
+    String selectedLocation = 'Current station'; // Day 21: Location Option State
     final TextEditingController messageController = TextEditingController();
 
     final List<Map<String, dynamic>> updateTags = [
@@ -279,6 +279,13 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       {'label': '⏰ Delay', 'color': const Color(0xFFEA580C)},
     ];
 
+    final List<String> locationOptions = [
+      'Current station',
+      'Previous station',
+      'Next station',
+      'Other location',
+    ];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -290,167 +297,206 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-                left: 20,
-                right: 20,
-                top: 12,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                  left: 20,
+                  right: 20,
+                  top: 12,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCBD5E1),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.rate_review_rounded, color: Color(0xFF0284C7), size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Post Community Update',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                          const Row(
+                            children: [
+                              Icon(Icons.rate_review_rounded, color: Color(0xFF0284C7), size: 20),
+                              SizedBox(width: 8),
+                              Text(
+                                'Post Community Update',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            style: IconButton.styleFrom(
+                              backgroundColor: const Color(0xFFF1F5F9),
+                              padding: const EdgeInsets.all(6),
+                            ),
+                            icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 18),
+                            onPressed: () => Navigator.pop(context),
                           ),
                         ],
                       ),
-                      IconButton(
-                        style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFFF1F5F9),
-                          padding: const EdgeInsets.all(6),
+                      const SizedBox(height: 16),
+                      // Day 21: Location Selection UI
+                      const Text(
+                        'Select Location Context',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: locationOptions.map((loc) {
+                          final isSelected = selectedLocation == loc;
+                          return ChoiceChip(
+                            label: Text(
+                              loc,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? Colors.white : const Color(0xFF334155),
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFF0284C7),
+                            backgroundColor: const Color(0xFFF8FAFC),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            onSelected: (bool selected) {
+                              setModalState(() {
+                                selectedLocation = loc;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Select Status Tag',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: updateTags.map((tagMap) {
+                          final tag = tagMap['label'] as String;
+                          final isSelected = selectedTag == tag;
+                          return ChoiceChip(
+                            label: Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? Colors.white : const Color(0xFF334155),
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFF0F172A),
+                            backgroundColor: const Color(0xFFF8FAFC),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(
+                                color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            onSelected: (bool selected) {
+                              setModalState(() {
+                                selectedTag = tag;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Additional Details (Optional)',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: messageController,
+                        maxLines: 3,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                        decoration: InputDecoration(
+                          hintText: 'Write details (e.g. Coach position, cleaning status, reason)...',
+                          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.all(14),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFF0284C7), width: 1.5),
+                          ),
                         ),
-                        icon: const Icon(Icons.close, color: Color(0xFF64748B), size: 18),
-                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0F172A),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            if (messageController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please enter update details')),
+                              );
+                              return;
+                            }
+
+                            final newPost = {
+                              'user': 'You',
+                              'time': 'Just now',
+                              'station': '$selectedTag ($selectedLocation)',
+                              'message': messageController.text.trim(),
+                              'likes': '0',
+                            };
+
+                            setState(() {
+                              _communityPosts.insert(0, newPost);
+                            });
+
+                            if (onPostAdded != null) {
+                              onPostAdded(newPost);
+                            }
+
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Update posted successfully for $selectedLocation')),
+                            );
+                          },
+                          child: const Text(
+                            'Post Community Update',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Select Status Tag',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: updateTags.map((tagMap) {
-                      final tag = tagMap['label'] as String;
-                      final isSelected = selectedTag == tag;
-                      return ChoiceChip(
-                        label: Text(
-                          tag,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? Colors.white : const Color(0xFF334155),
-                          ),
-                        ),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFF0F172A),
-                        backgroundColor: const Color(0xFFF8FAFC),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: BorderSide(
-                            color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
-                          ),
-                        ),
-                        onSelected: (bool selected) {
-                          setModalState(() {
-                            selectedTag = tag;
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Additional Details (Optional)',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: messageController,
-                    maxLines: 3,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
-                    decoration: InputDecoration(
-                      hintText: 'Write details (e.g. Coach position, cleaning status, reason)...',
-                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
-                      contentPadding: const EdgeInsets.all(14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF0284C7), width: 1.5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F172A),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                      onPressed: () {
-                        if (messageController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter update details')),
-                          );
-                          return;
-                        }
-
-                        final newPost = {
-                          'user': 'You',
-                          'time': 'Just now',
-                          'station': selectedTag,
-                          'message': messageController.text.trim(),
-                          'likes': '0',
-                        };
-
-                        setState(() {
-                          _communityPosts.insert(0, newPost);
-                        });
-
-                        if (onPostAdded != null) {
-                          onPostAdded(newPost);
-                        }
-
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Update posted successfully under "$selectedTag"')),
-                        );
-                      },
-                      child: const Text(
-                        'Post Community Update',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+                );
+            },
         );
       },
     );
@@ -561,7 +607,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Train Details Container
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -682,7 +727,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Community Updates Section with Click to Open Full Chat Room
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -991,43 +1035,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                             ),
                           ],
                         ),
-                        if (index == 1)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 42, bottom: 16),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
-                              ),
-                              child: ExpansionTile(
-                                tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                                title: const Row(
-                                  children: [
-                                    Icon(Icons.unfold_more_rounded, size: 16, color: Color(0xFF64748B)),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      '2 Non-Halting Stations in-between',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                                    ),
-                                  ],
-                                ),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: const [
-                                        Text('• Kosi Kalan (KSV) - Crossed at 18:45', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                                        SizedBox(height: 6),
-                                        Text('• Mathura Outer - Crossed at 19:02', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                       ],
                     );
                   },
@@ -1041,7 +1048,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
   }
 }
 
-// Dedicated Train Chat Room Screen (Active until destination reached)
 class TrainChatRoomScreen extends StatefulWidget {
   final String trainNumber;
   final String trainName;
@@ -1062,7 +1068,7 @@ class TrainChatRoomScreen extends StatefulWidget {
 
 class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
   final TextEditingController _msgController = TextEditingController();
-  bool isJourneyCompleted = false; // Set to true once train reaches final destination
+  bool isJourneyCompleted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1116,8 +1122,8 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             color: const Color(0xFFE0F2FE),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Icon(Icons.info_outline, color: Color(0xFF0284C7), size: 18),
                 SizedBox(width: 8),
                 Expanded(
