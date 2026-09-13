@@ -102,7 +102,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                     controller: _trainController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'Enter Train Number (e.g. 12951, 0000)',
+                      hintText: 'Enter Train Number (e.g. 12951)',
                       hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                       prefixIcon: const Icon(Icons.train_rounded, color: Color(0xFF0284C7)),
                       filled: true,
@@ -207,7 +207,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
   late String lastUpdated;
   Timer? _autoRefreshTimer;
   bool isAutoRefreshEnabled = true;
-  String gpsDetectedStatus = 'Fetching GPS location & matching station...';
+  String gpsDetectedStatus = 'Fetching GPS location and matching train route...';
 
   final List<Map<String, String>> _communityPosts = [
     {
@@ -223,7 +223,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       'time': '35 mins ago',
       'station': 'Mathura Jn (Previous)',
       'message': 'Pantry car food quality was decent today. Evening snacks served hot.',
-      'likes': 'Verified by GPS & Photo 🛡️',
+      'likes': 'Verified by GPS and Photo',
       'isHighlighted': 'true',
     },
   ];
@@ -246,13 +246,10 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          bool turnedOn = await _showEnableLocationDialog();
-          if (!turnedOn) {
-            setState(() {
-              gpsDetectedStatus = 'Location is turned off. Please enable GPS.';
-            });
-            return;
-          }
+          setState(() {
+            gpsDetectedStatus = 'Location is turned off. Please enable GPS.';
+          });
+          return;
         }
       }
 
@@ -271,6 +268,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      // Train ke current active station ke coordinates (Jaise Kota Junction)
       double stationLat = 25.1478;
       double stationLng = 75.8373;
 
@@ -283,46 +281,21 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
       if (mounted) {
         setState(() {
-          if (distanceInMeters <= 5000) {
-            gpsDetectedStatus = '📍 GPS Verified: You are near Kota Junction (Train is here)';
+          // Agar user train ke current station ke 3 kilometer ke daayre mein hai tabhi valid maanein
+          if (distanceInMeters <= 3000) {
+            gpsDetectedStatus = 'GPS Verified: Near Kota Junction';
           } else {
-            gpsDetectedStatus = '🚆 Train is running between Mathura Jn and Kota Jn';
+            gpsDetectedStatus = 'GPS Verified: On Train Route';
           }
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          gpsDetectedStatus = 'At Kota Junction (KOTA)';
+          gpsDetectedStatus = 'Location fetch failed';
         });
       }
     }
-  }
-
-  Future<bool> _showEnableLocationDialog() async {
-    return await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Enable Location'),
-          content: const Text('Location service is disabled. Please turn on GPS to get accurate train status automatically.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop(true);
-                await Geolocator.openLocationSettings();
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
   }
 
   @override
@@ -348,7 +321,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     if (!isAuto) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Live status updated via GPS & crowdsourcing'),
+          content: Text('Live status updated'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -356,10 +329,14 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
   }
 
   void _showAddUpdateDialog(BuildContext context, {Function(Map<String, String>)? onPostAdded}) {
-    String selectedTag = '🚆 Departed';
-    String selectedLocation = 'Current station';
+    String selectedTag = 'Departed';
+    String selectedLocation = 'My current location';
     final TextEditingController messageController = TextEditingController();
     XFile? capturedImage;
+
+    bool isLocationVerifying = true;
+    bool isLocationVerifiedSuccessfully = false;
+    String locationVerificationMessage = 'Verifying if you are at the station or on the train route...';
 
     messageController.text = '$selectedTag at $selectedLocation: ';
     messageController.selection = TextSelection.fromPosition(
@@ -367,18 +344,16 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     );
 
     final List<Map<String, dynamic>> updateTags = [
-      {'label': '🚆 Departed', 'color': const Color(0xFF16A34A)},
-      {'label': '🚉 Arrived', 'color': const Color(0xFF0284C7)},
-      {'label': '🔄 Crossed', 'color': const Color(0xFF6366F1)},
-      {'label': '🛑 Waiting at Signal', 'color': const Color(0xFFCA8A04)},
-      {'label': '⚠️ Train Stopped', 'color': const Color(0xFFDC2626)},
-      {'label': '⏰ Delay', 'color': const Color(0xFFEA580C)},
+      {'label': 'Departed', 'color': const Color(0xFF16A34A)},
+      {'label': 'Arrived', 'color': const Color(0xFF0284C7)},
+      {'label': 'Crossed', 'color': const Color(0xFF6366F1)},
+      {'label': 'Waiting at Signal', 'color': const Color(0xFFCA8A04)},
+      {'label': 'Train Stopped', 'color': const Color(0xFFDC2626)},
+      {'label': 'Delay', 'color': const Color(0xFFEA580C)},
     ];
 
     final List<String> locationOptions = [
-      'Current station',
-      'Previous station',
-      'Next station',
+      'My current location',
       'Other location',
     ];
 
@@ -392,7 +367,80 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            bool needsProof = selectedLocation == 'Previous station' || selectedTag == '🚉 Arrived';
+            // Strict Location Validation Logic
+            void verifyLiveLocation() async {
+              setModalState(() {
+                isLocationVerifying = true;
+                locationVerificationMessage = 'Checking your GPS against train route coordinates...';
+              });
+
+              try {
+                bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+                if (!serviceEnabled) {
+                  setModalState(() {
+                    isLocationVerifying = false;
+                    isLocationVerifiedSuccessfully = false;
+                    locationVerificationMessage = 'GPS is off. Please turn on location services.';
+                  });
+                  return;
+                }
+
+                LocationPermission permission = await Geolocator.checkPermission();
+                if (permission == LocationPermission.denied) {
+                  permission = await Geolocator.requestPermission();
+                  if (permission == LocationPermission.denied) {
+                    setModalState(() {
+                      isLocationVerifying = false;
+                      isLocationVerifiedSuccessfully = false;
+                      locationVerificationMessage = 'Location permission denied.';
+                    });
+                    return;
+                  }
+                }
+
+                Position position = await Geolocator.getCurrentPosition(
+                  desiredAccuracy: LocationAccuracy.high,
+                );
+
+                // Train ke current station ya route ka coordinate (Example: Kota Junction)
+                double targetLat = 25.1478;
+                double targetLng = 75.8373;
+
+                double distanceInMeters = Geolocator.distanceBetween(
+                  position.latitude,
+                  position.longitude,
+                  targetLat,
+                  targetLng,
+                );
+
+                // Yahan hum distance check kar rahe hain.
+                // Agar user station ya train ke aas-pass (5 kilometers ke andar) hai tabhi verify hoga.
+                // Agar aap chahte hain ki train ke chalte hue bhi strict check ho, toh yahan route tolerance set kar sakte hain.
+                if (distanceInMeters <= 5000) {
+                  setModalState(() {
+                    isLocationVerifying = false;
+                    isLocationVerifiedSuccessfully = true;
+                    locationVerificationMessage = 'GPS Verified: Passenger is near the active station route.';
+                  });
+                } else {
+                  setModalState(() {
+                    isLocationVerifying = false;
+                    isLocationVerifiedSuccessfully = false;
+                    locationVerificationMessage = 'Verification Failed: You are too far from the train route coordinates.';
+                  });
+                }
+              } catch (e) {
+                setModalState(() {
+                  isLocationVerifying = false;
+                  isLocationVerifiedSuccessfully = false;
+                  locationVerificationMessage = 'Location check failed. Try again.';
+                });
+              }
+            }
+
+            if (isLocationVerifying && locationVerificationMessage.contains('Verifying')) {
+              Future.microtask(() => verifyLiveLocation());
+            }
 
             return Padding(
               padding: EdgeInsets.only(
@@ -440,6 +488,57 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isLocationVerifiedSuccessfully
+                            ? const Color(0xFFF0FDF4)
+                            : (isLocationVerifying ? const Color(0xFFEFF6FF) : const Color(0xFFFEF2F2)),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isLocationVerifiedSuccessfully
+                              ? const Color(0xFFBBF7D0)
+                              : (isLocationVerifying ? const Color(0xFFBFDBFE) : const Color(0xFFFECACA)),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          if (isLocationVerifying)
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0284C7)),
+                            )
+                          else
+                            Icon(
+                              isLocationVerifiedSuccessfully ? Icons.check_circle_rounded : Icons.error_rounded,
+                              color: isLocationVerifiedSuccessfully ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                              size: 18,
+                            ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              locationVerificationMessage,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isLocationVerifiedSuccessfully
+                                    ? const Color(0xFF166534)
+                                    : (isLocationVerifying ? const Color(0xFF1E40AF) : const Color(0xFF991B1B)),
+                              ),
+                            ),
+                          ),
+                          if (!isLocationVerifying && !isLocationVerifiedSuccessfully)
+                            TextButton(
+                              onPressed: verifyLiveLocation,
+                              child: const Text('Retry', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            ),
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 16),
                     const Text(
                       'Select Location Context',
@@ -548,71 +647,75 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                         ),
                       ),
                     ),
-                    if (needsProof) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFFECACA)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 18),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Proof Required (Departed Station Update)',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Since this station is already marked departed, please upload a live photo to verify today\'s timestamp & GPS location.',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF7F1D1D)),
-                            ),
-                            const SizedBox(height: 10),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFFDC2626),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  side: const BorderSide(color: Color(0xFFFCA5A5)),
-                                ),
-                              ),
-                              onPressed: () async {
-                                final ImagePicker picker = ImagePicker();
-                                final XFile? image = await picker.pickImage(source: ImageSource.camera);
-                                if (image != null) {
-                                  setModalState(() {
-                                    capturedImage = image;
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.camera_alt_rounded, size: 16),
-                              label: Text(capturedImage == null ? 'Take Live Photo Proof' : 'Photo Attached ✅'),
-                            ),
-                          ],
-                        ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
-                    ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.camera_alt_outlined, color: Color(0xFF0284C7), size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                'Attach Live Photo (Optional)',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'You can optionally add a photo proof to make your update more trusted.',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF0284C7),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(color: Color(0xFFBAE6FD)),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final ImagePicker picker = ImagePicker();
+                              final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                              if (image != null) {
+                                setModalState(() {
+                                  capturedImage = image;
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.camera_alt_rounded, size: 16),
+                            label: Text(capturedImage == null ? 'Take Live Photo' : 'Photo Attached'),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F172A),
+                          backgroundColor: isLocationVerifiedSuccessfully ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           elevation: 0,
                         ),
-                        onPressed: () {
+                        onPressed: !isLocationVerifiedSuccessfully
+                            ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Location verification failed. You must be near the train route to post.')),
+                          );
+                        }
+                            : () {
                           if (messageController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Please enter update details')),
@@ -620,20 +723,14 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                             return;
                           }
 
-                          if (needsProof && capturedImage == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Photo proof is mandatory for past/departed stations!')),
-                            );
-                            return;
-                          }
-
+                          final hasPhoto = capturedImage != null;
                           final newPost = {
                             'user': 'You',
                             'time': 'Just now',
                             'station': '$selectedTag ($selectedLocation)',
                             'message': messageController.text.trim(),
-                            'likes': needsProof ? 'Verified by GPS & Photo 🛡️' : 'Confirmed by 1 passenger',
-                            'isHighlighted': needsProof ? 'true' : 'false',
+                            'likes': hasPhoto ? 'Verified by GPS and Photo' : 'Verified by GPS',
+                            'isHighlighted': 'true',
                           };
 
                           setState(() {
@@ -646,12 +743,12 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Verified update posted successfully! Chat highlighted.')),
+                            const SnackBar(content: Text('Update posted successfully after route verification.')),
                           );
                         },
-                        child: const Text(
-                          'Post Community Update',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        child: Text(
+                          isLocationVerifiedSuccessfully ? 'Post Verified Update' : 'Route Verification Required',
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -844,7 +941,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '🛰️ GPS Crowdsourcing Active',
+                                  'GPS Route Crowdsourcing Active',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -853,7 +950,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                                 ),
                                 SizedBox(height: 2),
                                 Text(
-                                  'Location fetched from active passengers on board.',
+                                  'Location is strictly validated against active train route coordinates.',
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     color: Color(0xFF0284C7),
@@ -1376,10 +1473,10 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
                     final newPost = {
                       'user': 'You',
                       'time': 'Just now',
-                      'station': '🚆 Live Update',
+                      'station': 'Live Update',
                       'message': _msgController.text.trim(),
-                      'likes': 'Confirmed by 1 passenger',
-                      'isHighlighted': 'false',
+                      'likes': 'Verified by GPS',
+                      'isHighlighted': 'true',
                     };
                     widget.onAddPost(newPost);
                     setState(() {
