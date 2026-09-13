@@ -1,6 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+
+void main() {
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: LiveStatusSearchScreen(),
+  ));
+}
 
 class LiveStatusSearchScreen extends StatefulWidget {
   const LiveStatusSearchScreen({super.key});
@@ -62,10 +70,6 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
         title: const Text(
           'Live Train Status',
           style: TextStyle(color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
-          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Padding(
@@ -211,14 +215,16 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       'time': '10 mins ago',
       'station': 'Kota Jn (Current)',
       'message': 'Cleanliness in Coach B3 is good. Train departed right on time after pantry loading.',
-      'likes': '14',
+      'likes': 'Confirmed by 4 passengers',
+      'isHighlighted': 'false',
     },
     {
       'user': 'Amit K.',
       'time': '35 mins ago',
       'station': 'Mathura Jn (Previous)',
       'message': 'Pantry car food quality was decent today. Evening snacks served hot.',
-      'likes': '8',
+      'likes': 'Verified by GPS & Photo 🛡️',
+      'isHighlighted': 'true',
     },
   ];
 
@@ -235,15 +241,19 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     });
   }
 
-  // Automatic GPS Location & Station Matching Logic
   Future<void> _checkUserLocationAndMatchStation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() {
-          gpsDetectedStatus = 'GPS is turned off. Using standard schedule.';
-        });
-        return;
+        if (mounted) {
+          bool turnedOn = await _showEnableLocationDialog();
+          if (!turnedOn) {
+            setState(() {
+              gpsDetectedStatus = 'Location is turned off. Please enable GPS.';
+            });
+            return;
+          }
+        }
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -261,8 +271,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Dummy coordinates mapping for demonstration (e.g., Kota Junction coordinates)
-      // Real app mein aap apne stations ki lat/long list ke sath distance calculate karenge using Geolocator.distanceBetween
       double stationLat = 25.1478;
       double stationLng = 75.8373;
 
@@ -275,7 +283,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
       if (mounted) {
         setState(() {
-          if (distanceInMeters <= 5000) { // Agar user station ke 5 km ke daayre mein hai
+          if (distanceInMeters <= 5000) {
             gpsDetectedStatus = '📍 GPS Verified: You are near Kota Junction (Train is here)';
           } else {
             gpsDetectedStatus = '🚆 Train is running between Mathura Jn and Kota Jn';
@@ -289,6 +297,32 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
         });
       }
     }
+  }
+
+  Future<bool> _showEnableLocationDialog() async {
+    return await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enable Location'),
+          content: const Text('Location service is disabled. Please turn on GPS to get accurate train status automatically.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop(true);
+                await Geolocator.openLocationSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
   }
 
   @override
@@ -325,6 +359,12 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     String selectedTag = '🚆 Departed';
     String selectedLocation = 'Current station';
     final TextEditingController messageController = TextEditingController();
+    XFile? capturedImage;
+
+    messageController.text = '$selectedTag at $selectedLocation: ';
+    messageController.selection = TextSelection.fromPosition(
+      TextPosition(offset: messageController.text.length),
+    );
 
     final List<Map<String, dynamic>> updateTags = [
       {'label': '🚆 Departed', 'color': const Color(0xFF16A34A)},
@@ -352,6 +392,8 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            bool needsProof = selectedLocation == 'Previous station' || selectedTag == '🚉 Arrived';
+
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -430,6 +472,10 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                           onSelected: (bool selected) {
                             setModalState(() {
                               selectedLocation = loc;
+                              messageController.text = '$selectedTag at $selectedLocation: ';
+                              messageController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: messageController.text.length),
+                              );
                             });
                           },
                         );
@@ -468,6 +514,10 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                           onSelected: (bool selected) {
                             setModalState(() {
                               selectedTag = tag;
+                              messageController.text = '$selectedTag at $selectedLocation: ';
+                              messageController.selection = TextSelection.fromPosition(
+                                TextPosition(offset: messageController.text.length),
+                              );
                             });
                           },
                         );
@@ -475,17 +525,16 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'Additional Details (Optional)',
+                      'Additional Details',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: messageController,
-                      maxLines: 3,
+                      maxLines: 2,
                       style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
                       decoration: InputDecoration(
-                        hintText: 'Write details (e.g. Coach position, cleaning status)...',
-                        hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                        hintText: 'Write details...',
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.all(14),
@@ -499,6 +548,60 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                         ),
                       ),
                     ),
+                    if (needsProof) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF2F2),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFECACA)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 18),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Proof Required (Departed Station Update)',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Since this station is already marked departed, please upload a live photo to verify today\'s timestamp & GPS location.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF7F1D1D)),
+                            ),
+                            const SizedBox(height: 10),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFFDC2626),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: const BorderSide(color: Color(0xFFFCA5A5)),
+                                ),
+                              ),
+                              onPressed: () async {
+                                final ImagePicker picker = ImagePicker();
+                                final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                                if (image != null) {
+                                  setModalState(() {
+                                    capturedImage = image;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt_rounded, size: 16),
+                              label: Text(capturedImage == null ? 'Take Live Photo Proof' : 'Photo Attached ✅'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -517,12 +620,20 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                             return;
                           }
 
+                          if (needsProof && capturedImage == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Photo proof is mandatory for past/departed stations!')),
+                            );
+                            return;
+                          }
+
                           final newPost = {
                             'user': 'You',
                             'time': 'Just now',
                             'station': '$selectedTag ($selectedLocation)',
                             'message': messageController.text.trim(),
-                            'likes': '0',
+                            'likes': needsProof ? 'Verified by GPS & Photo 🛡️' : 'Confirmed by 1 passenger',
+                            'isHighlighted': needsProof ? 'true' : 'false',
                           };
 
                           setState(() {
@@ -535,7 +646,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Update posted successfully for $selectedLocation')),
+                            const SnackBar(content: Text('Verified update posted successfully! Chat highlighted.')),
                           );
                         },
                         child: const Text(
@@ -776,7 +887,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -870,60 +980,78 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                       separatorBuilder: (context, index) => const Divider(height: 16, color: Color(0xFFF1F5F9)),
                       itemBuilder: (context, index) {
                         final post = _communityPosts[index];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 12,
-                                      backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
-                                      child: Text(
-                                        post['user']![0],
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                        final bool isHigh = post['isHighlighted'] == 'true';
+
+                        return Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isHigh ? const Color(0xFFF0FDF4) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: isHigh ? Border.all(color: const Color(0xFFBBF7D0)) : null,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 12,
+                                        backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                                        child: Text(
+                                          post['user']![0],
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0284C7)),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      post['user']!,
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(4),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        post['user']!,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                                       ),
-                                      child: Text(
-                                        post['station']!,
-                                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          post['station']!,
+                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  Text(
+                                    post['time']!,
+                                    style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                post['message']!,
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.3),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                post['likes']!,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isHigh ? const Color(0xFF16A34A) : const Color(0xFF64748B),
                                 ),
-                                Text(
-                                  post['time']!,
-                                  style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              post['message']!,
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.3),
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
               const Text(
                 'Route Timeline & Arriving Time',
@@ -1099,7 +1227,6 @@ class TrainChatRoomScreen extends StatefulWidget {
 
 class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
   final TextEditingController _msgController = TextEditingController();
-  bool isJourneyCompleted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1135,11 +1262,14 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final post = widget.posts[index];
+                final bool isHigh = post['isHighlighted'] == 'true';
+
                 return Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isHigh ? const Color(0xFFF0FDF4) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: isHigh ? Border.all(color: const Color(0xFFBBF7D0)) : null,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.02),
@@ -1194,6 +1324,15 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
                         post['message']!,
                         style: const TextStyle(fontSize: 13, color: Color(0xFF334155), height: 1.3),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        post['likes']!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isHigh ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -1239,7 +1378,8 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
                       'time': 'Just now',
                       'station': '🚆 Live Update',
                       'message': _msgController.text.trim(),
-                      'likes': '0',
+                      'likes': 'Confirmed by 1 passenger',
+                      'isHighlighted': 'false',
                     };
                     widget.onAddPost(newPost);
                     setState(() {
