@@ -19,13 +19,39 @@ class LiveStatusSearchScreen extends StatefulWidget {
 
 class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   final TextEditingController _trainController = TextEditingController();
-  String selectedDate = 'Today (Thu, 4 Sep)';
 
-  final List<String> dateOptions = [
-    'Yesterday (Wed, 3 Sep)',
-    'Today (Thu, 4 Sep)',
-    'Tomorrow (Fri, 5 Sep)',
-  ];
+  // Automatically initialized to today's current date
+  DateTime _selectedDate = DateTime.now();
+
+  // Date picker function for user flexibility
+  void _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 5)),
+      lastDate: DateTime.now().add(const Duration(days: 10)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  // Helper to format date cleanly
+  String _formatDate(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    String weekday = weekdays[date.weekday - 1];
+    String month = months[date.month - 1];
+    return '$weekday, ${date.day} $month';
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
 
   Future<void> _checkLocationAndNavigate(BuildContext context) async {
     if (_trainController.text.trim().isEmpty) {
@@ -53,7 +79,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
         MaterialPageRoute(
           builder: (context) => LiveStatusDetailScreen(
             trainNumber: _trainController.text.trim(),
-            journeyDate: selectedDate,
+            journeyDate: _isToday(_selectedDate) ? 'Today (${_formatDate(_selectedDate)})' : _formatDate(_selectedDate),
           ),
         ),
       );
@@ -119,40 +145,33 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: selectedDate,
-                        isExpanded: true,
-                        icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
-                        items: dateOptions.map((String date) {
-                          return DropdownMenuItem<String>(
-                            value: date,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.calendar_today_rounded, color: Color(0xFF0F172A), size: 18),
-                                const SizedBox(width: 12),
-                                Text(
-                                  date,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
-                                ),
-                              ],
+                  // Interactive Dynamic Date Picker Container
+                  GestureDetector(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, color: Color(0xFF0F172A), size: 18),
+                          const SizedBox(width: 12),
+                          Text(
+                            _isToday(_selectedDate)
+                                ? 'Today (${_formatDate(_selectedDate)})'
+                                : _formatDate(_selectedDate),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              selectedDate = newValue;
-                            });
-                          }
-                        },
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B)),
+                        ],
                       ),
                     ),
                   ),
@@ -231,7 +250,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
   @override
   void initState() {
     super.initState();
-    lastUpdated = 'Just now (4:42 PM)';
+    lastUpdated = 'Just now';
     _checkUserLocationAndMatchStation();
 
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -268,7 +287,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Train ke current active station ke coordinates (Jaise Kota Junction)
       double stationLat = 25.1478;
       double stationLng = 75.8373;
 
@@ -281,7 +299,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
 
       if (mounted) {
         setState(() {
-          // Agar user train ke current station ke 3 kilometer ke daayre mein hai tabhi valid maanein
           if (distanceInMeters <= 3000) {
             gpsDetectedStatus = 'GPS Verified: Near Kota Junction';
           } else {
@@ -367,7 +384,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            // Strict Location Validation Logic
             void verifyLiveLocation() async {
               setModalState(() {
                 isLocationVerifying = true;
@@ -402,7 +418,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                   desiredAccuracy: LocationAccuracy.high,
                 );
 
-                // Train ke current station ya route ka coordinate (Example: Kota Junction)
                 double targetLat = 25.1478;
                 double targetLng = 75.8373;
 
@@ -413,9 +428,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                   targetLng,
                 );
 
-                // Yahan hum distance check kar rahe hain.
-                // Agar user station ya train ke aas-pass (5 kilometers ke andar) hai tabhi verify hoga.
-                // Agar aap chahte hain ki train ke chalte hue bhi strict check ho, toh yahan route tolerance set kar sakte hain.
                 if (distanceInMeters <= 5000) {
                   setModalState(() {
                     isLocationVerifying = false;
@@ -489,7 +501,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -538,7 +549,6 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
                     const Text(
                       'Select Location Context',
@@ -1448,15 +1458,11 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
                       hintText: 'Share live update with passengers...',
                       hintStyle: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                       filled: true,
-                      fillColor: const Color(0xFFF8FAFC),
+                      fillColor: const Color(0xFFF1F5F9),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),
@@ -1465,11 +1471,12 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
                 IconButton(
                   style: IconButton.styleFrom(
                     backgroundColor: const Color(0xFF0F172A),
-                    padding: const EdgeInsets.all(12),
+                    foregroundColor: Colors.white,
                   ),
-                  icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  icon: const Icon(Icons.send_rounded, size: 18),
                   onPressed: () {
                     if (_msgController.text.trim().isEmpty) return;
+
                     final newPost = {
                       'user': 'You',
                       'time': 'Just now',
@@ -1478,10 +1485,10 @@ class _TrainChatRoomScreenState extends State<TrainChatRoomScreen> {
                       'likes': 'Verified by GPS',
                       'isHighlighted': 'true',
                     };
+
                     widget.onAddPost(newPost);
-                    setState(() {
-                      _msgController.clear();
-                    });
+                    _msgController.clear();
+                    setState(() {});
                   },
                 ),
               ],
