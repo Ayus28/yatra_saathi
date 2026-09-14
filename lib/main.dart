@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'search_screen.dart';
 import 'live_status_screen.dart';
+import 'community_screen.dart'; // Community screen import
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const YatraSaathiApp());
 }
 
@@ -395,15 +402,16 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                   children: [
                     Expanded(
                       child: ModernDashboardCard(
-                        title: 'My Journey',
-                        subtitle: 'Trip & alarm manager',
-                        icon: Icons.luggage_rounded,
+                        title: 'Community Feed',
+                        subtitle: 'Live passenger updates',
+                        icon: Icons.forum_rounded,
                         iconBgColor: const Color(0xFFDCFCE7),
                         iconColor: const Color(0xFF16A34A),
                         onTap: () {
-                          setState(() {
-                            hasActiveJourney = !hasActiveJourney;
-                          });
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const CommunityScreen()),
+                          );
                         },
                       ),
                     ),

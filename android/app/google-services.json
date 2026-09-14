@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "471930760479",
+    "project_id": "yatra-saathi-2801",
+    "storage_bucket": "yatra-saathi-2801.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471930760479:android:adc2a313a01beee6a0942a",
+        "android_client_info": {
+          "package_name": "com.example.projects"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhCidTtIKLdMRjd8vzPdgBF3ivWB_7Akk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471930760479:android:e5fbe82a233b7e6ca0942a",
+        "android_client_info": {
+          "package_name": "com.example.railway_assistant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhCidTtIKLdMRjd8vzPdgBF3ivWB_7Akk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471930760479:android:6d1626f5721304d2a0942a",
+        "android_client_info": {
+          "package_name": "com.example.yatra_saathi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhCidTtIKLdMRjd8vzPdgBF3ivWB_7Akk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
