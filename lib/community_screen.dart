@@ -19,6 +19,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     // 1. Check Rate Limit (2 minutes)
     bool canPost = await _moderationService.canUserPost(currentUserId);
+    if (!mounted) return;
     if (!canPost) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -38,6 +39,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'isFlagged': false,
     });
 
+    if (!mounted) return;
     _postController.clear();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Update posted successfully!')),
@@ -154,6 +156,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                     icon: const Icon(Icons.flag_outlined, size: 18, color: Colors.redAccent),
                                     onPressed: () async {
                                       await _moderationService.reportPost(postId);
+                                      if (!context.mounted) return;
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Post reported for moderation.')),
                                       );

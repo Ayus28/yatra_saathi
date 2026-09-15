@@ -288,7 +288,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
       }
 
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       double stationLat = 25.1478;
@@ -419,7 +419,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
                 }
 
                 Position position = await Geolocator.getCurrentPosition(
-                  desiredAccuracy: LocationAccuracy.high,
+                  locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
                 );
 
                 double targetLat = 25.1478;
@@ -816,7 +816,7 @@ class _LiveStatusDetailScreenState extends State<LiveStatusDetailScreen> {
     }
 
     final trainName = widget.trainNumber == '12951' ? 'Rajdhani Express' : 'Superfast Express';
-    final delayStatus = '15 mins late';
+    const delayStatus = '15 mins late';
 
     final List<Map<String, dynamic>> stations = [
       {'code': 'NDLS', 'name': 'New Delhi', 'arr': '16:50', 'dep': '16:55', 'expArr': '16:50', 'expDep': '16:55', 'status': 'departed', 'delay': 'On time'},

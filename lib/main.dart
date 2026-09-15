@@ -4,7 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'search_screen.dart';
 import 'live_status_screen.dart';
-import 'community_screen.dart'; // Community screen import
+import 'community_screen.dart';
+import 'pnr_status_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -423,7 +424,12 @@ class _ModernHomeScreenState extends State<ModernHomeScreen> {
                         icon: Icons.confirmation_number_rounded,
                         iconBgColor: const Color(0xFFFFEDD5),
                         iconColor: const Color(0xFFEA580C),
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const PnrStatusScreen()),
+                          );
+                        },
                       ),
                     ),
                   ],
