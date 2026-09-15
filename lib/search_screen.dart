@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 
 // Day 6: Main Search Train Bottom Sheet UI
 void showSearchTrainSheet(BuildContext context) {
+  // Automatic Date & Station States declared outside builder so they persist on sheet updates
+  DateTime selectedDateTime = DateTime.now();
+  String fromStation = 'New Delhi (NDLS)';
+  String toStation = 'Mumbai Central (BCT)';
+  final TextEditingController trainSearchController = TextEditingController();
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -12,10 +18,14 @@ void showSearchTrainSheet(BuildContext context) {
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setSheetState) {
-          String fromStation = 'New Delhi (NDLS)';
-          String toStation = 'Mumbai Central (BCT)';
-          String selectedDate = 'Thu, 4 Sep 2026';
-          final TextEditingController trainSearchController = TextEditingController();
+          // Date Formatter Helper
+          String formatDate(DateTime date) {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            return '${weekdays[date.weekday - 1]}, ${date.day} ${months[date.month - 1]} ${date.year}';
+          }
+
+          String selectedDateStr = formatDate(selectedDateTime);
 
           void swapStations() {
             setSheetState(() {
@@ -159,29 +169,47 @@ void showSearchTrainSheet(BuildContext context) {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.calendar_today_rounded, color: Color(0xFF0F172A), size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('JOURNEY DATE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
-                              const SizedBox(height: 2),
-                              Text(selectedDate, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                            ],
+
+                  // Automatic Date Container with Date Picker functionality
+                  InkWell(
+                    onTap: () async {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDateTime,
+                        firstDate: DateTime.now().subtract(const Duration(days: 5)),
+                        lastDate: DateTime.now().add(const Duration(days: 60)),
+                      );
+                      if (picked != null) {
+                        setSheetState(() {
+                          selectedDateTime = picked;
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, color: Color(0xFF0F172A), size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('JOURNEY DATE (Automatic)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                                const SizedBox(height: 2),
+                                Text(selectedDateStr, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                              ],
+                            ),
                           ),
-                        ),
-                        const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
-                      ],
+                          const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -224,7 +252,7 @@ void showSearchTrainSheet(BuildContext context) {
                             builder: (context) => TrainResultsScreen(
                               from: fromStation,
                               to: toStation,
-                              date: selectedDate,
+                              date: selectedDateStr,
                               searchQuery: trainSearchController.text.trim(),
                             ),
                           ),

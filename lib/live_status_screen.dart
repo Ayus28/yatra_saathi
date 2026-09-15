@@ -19,11 +19,31 @@ class LiveStatusSearchScreen extends StatefulWidget {
 
 class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
   final TextEditingController _trainController = TextEditingController();
-
-  // Automatically initialized to today's current date
   DateTime _selectedDate = DateTime.now();
 
-  // Date picker function for user flexibility
+  @override
+  void initState() {
+    super.initState();
+    // Screen open hote hi automatic GPS permission aur location check trigger karne ke liye
+    _checkLocationPermissionAutomatically();
+  }
+
+  Future<void> _checkLocationPermissionAutomatically() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+    } catch (e) {
+      debugPrint("Automatic location error: $e");
+    }
+  }
+
   void _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -38,7 +58,6 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
     }
   }
 
-  // Helper to format date cleanly
   String _formatDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -53,7 +72,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
     return date.year == now.year && date.month == now.month && date.day == now.day;
   }
 
-  Future<void> _checkLocationAndNavigate(BuildContext context) async {
+  void _proceedToLiveStatus(BuildContext context) {
     if (_trainController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a train number')),
@@ -61,29 +80,15 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
       return;
     }
 
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location services are disabled. Please enable GPS.')),
-      );
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LiveStatusDetailScreen(
-            trainNumber: _trainController.text.trim(),
-            journeyDate: _isToday(_selectedDate) ? 'Today (${_formatDate(_selectedDate)})' : _formatDate(_selectedDate),
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LiveStatusDetailScreen(
+          trainNumber: _trainController.text.trim(),
+          journeyDate: _isToday(_selectedDate) ? 'Today (${_formatDate(_selectedDate)})' : _formatDate(_selectedDate),
         ),
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -145,7 +150,6 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Interactive Dynamic Date Picker Container
                   GestureDetector(
                     onTap: () => _selectDate(context),
                     child: Container(
@@ -187,7 +191,7 @@ class _LiveStatusSearchScreenState extends State<LiveStatusSearchScreen> {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: () => _checkLocationAndNavigate(context),
+                      onPressed: () => _proceedToLiveStatus(context),
                       child: const Text(
                         'Check Live Status',
                         style: TextStyle(
